@@ -1,4 +1,6 @@
-# Copilot Coding Agent Onboarding Guide for `redpanda-data/redpanda`
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## High-Level Overview
 
@@ -45,21 +47,43 @@ It uses extensively the thread-per-core model and asynchronous (coroutines, futu
   ```bash
   bazel build //...
   ```
+- **Build release:**
+  ```bash
+  bazel build --config=release //...
+  ```
 - **Test all:**
   ```bash
   bazel test //...
   ```
-- **Lint (C++):**
-  - Formatting and linting are enforced. Use:
-    ```bash
-    bazel run //tools:clang_format
-    ```
-  - Configs: `.clang-format`, `.clang-tidy`, etc.
-
-- **Go CLI (`rpk`) Build:**
+- **Run a specific test:**
   ```bash
-  bazel build //:rpk
+  bazel test //src/v/path/to:test_name
   ```
+- **Run tests matching a pattern:**
+  ```bash
+  bazel test //src/v/... --test_filter=TestPattern*
+  ```
+- **Lint (C++):**
+  ```bash
+  bazel run //tools:clang_format
+  ```
+
+### Go CLI (`rpk`) Development
+
+For rpk development (Go), see `src/go/rpk/CLAUDE.md` for detailed instructions.
+
+Quick reference:
+```bash
+cd src/go/rpk && ./build.sh    # Build
+go test ./... -count=1          # Test all
+make lint                       # Lint
+```
+
+### Integration Tests (Ducktape/rptest)
+
+Integration tests are in `tests/rptest/` using the Ducktape framework (Python).
+
+See `.buildkite/` for CI pipeline configurations.
 
 See `.bazelrc` for more details on build settings and config modes
 
@@ -72,23 +96,18 @@ See `.bazelrc` for more details on build settings and config modes
 ## Project Layout & Architectural Notes
 
 - **Main C++ source:** `src/v/`
-- **Go CLI:** `src/go/rpk/`
+  - Main binary: `src/v/redpanda/main.cc` → links against `:application` library
+  - Application split across `application*.cc` files for modularity (bootstrap, config, rpc, services, etc.)
+- **Go CLI:** `src/go/rpk/` (see `src/go/rpk/CLAUDE.md` for details)
 - **Build configuration:** `.bazelrc`, `.bazelversion`, `BUILD`, `MODULE.bazel`, and `bazel/`
 - **CI configuration:** `.github/workflows/`, `.buildkite/`
-- **Testing:** `tests/`
+- **Testing:** `tests/` (Ducktape/rptest integration tests)
 - **Config:** `conf/`
 - **Docker:** `tools/docker/`
 
 ### Lint/Formatting Configs:
 - `.clang-format`, `.clang-tidy*`: C++ style
 - `.style.yapf`, `.yapfignore`: Python formatting
-
-### CI/CD Checks
-
-- **Build, test, and lint are enforced by CI.** Use the same steps as above locally before PRs.
-
-### File Index (Root Level)
-- `.bazelignore`, `.bazelrc`, `.bazelversion`, `BUILD`, `MODULE.bazel`, `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `LICENSES/`, `bazel/`, `src/`, `tests/`, `conf/`, `tools/`, `.github/`, `.buildkite/`, etc.
 
 ---
 
@@ -194,11 +213,6 @@ for memory safety in coroutines, not self-reference.
   - ASCII diagrams for complex state machines or data flows
 - **Avoid obvious branching comments** - `if (x)` rarely needs `// when x is true`
 
-### More C++-Specific References
-
-- [MODULE.bazel](https://github.com/redpanda-data/redpanda/blob/dev/MODULE.bazel)
-- [BUILD](https://github.com/redpanda-data/redpanda/blob/dev/BUILD)
-
 ---
 
 ## Python specific instructions
@@ -250,5 +264,3 @@ git log --oneline --no-merges -- path/to/changed/files | head -20
   - The "what": new abstractions introduced, non-obvious changes
   - Integration tests: briefly note what behaviors are covered
 - Don't restate what's obvious from the diff, but duplicating a doc comment is fine if it helps reviewers understand the change faster.
-
-_Results from code search may be incomplete. For more C++ details, see the [repository code search](https://github.com/redpanda-data/redpanda/search?q=c%2B%2B)._
